@@ -1,4 +1,5 @@
 setwd("C:/Users/yz9186ci/Desktop/DSCI_Projects/Capstone")
+setwd("C:/Users/arile/Desktop/Capstone/DATA")
 
 #Data input
 
@@ -29,5 +30,6 @@ setwd("C:/Users/yz9186ci/Desktop/DSCI_Projects/Capstone")
   #arbitration
   
 # Data Cleaning
+  #test
 # Data Joining
   
