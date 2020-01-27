@@ -1,0 +1,33 @@
+setwd("C:/Users/yz9186ci/Desktop/DSCI_Projects/Capstone")
+
+#Data input
+
+  #Player Info
+  player <- read.csv("People.csv")
+  salary <- read.csv("Salaries.csv")
+  
+  #WAR
+  war11 <- read.csv("FanGraphs Leaderboard2011.csv")
+  war12 <- read.csv("FanGraphs Leaderboard2012.csv")
+  war13 <- read.csv("FanGraphs Leaderboard2013.csv")
+  war14 <- read.csv("FanGraphs Leaderboard2014.csv")
+  war15 <- read.csv("FanGraphs Leaderboard2015.csv")
+  war16 <- read.csv("FanGraphs Leaderboard2016.csv")
+  war17 <- read.csv("FanGraphs Leaderboard2017.csv")
+  war18 <- read.csv("FanGraphs Leaderboard2018.csv")
+
+  #Fielding Independent Pitching (FIP)
+  FIPcon <- read.csv("FanGraphs LeaderboardFIP.csv")
+  pitching <- read.csv("Pitching.csv")
+
+  #Stats for Calculations
+  team <- read.csv("Teams.csv")
+  appear <- read.csv("Appearances.csv")  
+  field <- read.csv("Fielding.csv")
+  batting <- read.csv("Batting.csv")
+  
+  #arbitration
+  
+# Data Cleaning
+# Data Joining
+  
