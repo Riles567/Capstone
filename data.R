@@ -1,6 +1,9 @@
-setwd("C:/Users/yz9186ci/Desktop/DSCI_Projects/Capstone")
-setwd("C:/Users/arile/Desktop/Capstone/DATA")
+setwd("C:/Users/yz9186ci/Desktop/Capstone/DATA") # Labtop
+setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
 
+#Packages
+  library(readxl)
+  library(dplyr)
 #Data input
 
   #Player Info
@@ -20,7 +23,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA")
   #Fielding Independent Pitching (FIP)
   FIPcon <- read.csv("FanGraphs LeaderboardFIP.csv")
   pitching <- read.csv("Pitching.csv")
-
+  
   #Stats for Calculations
   team <- read.csv("Teams.csv")
   appear <- read.csv("Appearances.csv")  
@@ -28,8 +31,18 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA")
   batting <- read.csv("Batting.csv")
   
   #arbitration
-  
+  arb11 <- read_excel("arb2011.xlsx")
+  arb12 <- read_excel("arb2012.xlsx")
+  arb13 <- read_excel("arb2013.xlsx")
+  arb14 <- read_excel("arb2014.xlsx")
+  arb15 <- read_excel("arb2015.xlsx")
+  arb16 <- read_excel("arb2016.xlsx")
+  arb17 <- read_excel("arb2017.xlsx")
+  arb18 <- read_excel("arb2018.xlsx")
+
 # Data Cleaning
-  #test
+  
+# Data Calculations
+  
 # Data Joining
   
