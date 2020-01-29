@@ -82,7 +82,6 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         head(arb17.clean)
       #2018
         arb18.clean <- clean(arb18)
-        arb18.clean$Player <- str_remove_all(arb18.clean$Player, "[??????]")
         head(arb18.clean)
 # Data Calculations
   
