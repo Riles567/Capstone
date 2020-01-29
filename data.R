@@ -20,7 +20,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     war16 <- read.csv("FanGraphs Leaderboard2016.csv")
     war17 <- read.csv("FanGraphs Leaderboard2017.csv")
     war18 <- read.csv("FanGraphs Leaderboard2018.csv")
-    
+    head(war11)
   #Fielding Independent Pitching (FIP)
     FIPcon <- read.csv("FanGraphs LeaderboardFIP.csv")
     pitching <- read.csv("Pitching.csv")
@@ -51,6 +51,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         arb.clean$`Team Amt.` <- str_remove_all(arb.clean$`Team Amt.`, "[$M]")
         arb.clean$`Player Amt.` <- str_remove_all(arb.clean$`Player Amt.`, "[$M]")
         arb.clean$Player <- str_remove_all(arb.clean$Player, "[??????]")
+        arb.clean$Player <- trimws(arb.clean$Player, which = "right")
         arb.clean$`Settled Amt.` <- as.numeric(arb.clean$`Settled Amt.`)
         arb.clean$Midpoint <- as.numeric(arb.clean$Midpoint)
         arb.clean$`Team Amt.` <- as.numeric(arb.clean$`Team Amt.`)
@@ -86,9 +87,42 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     
     #seperating position players and pitchers
       
-      #position players
-      
-      #Pitchers
+      #Function for position and pitchers
+        pos <- function(war){
+          warpos <- filter(war, Pos != "P")
+        }
+        pit <- function(war){
+          warpit <- filter(war, Pos == "P")
+        }
+      #Seperating War Data
+        for (i in 1:8) {
+          warpos1[i] <- pos(war1[i])
+          warpit1[i] <- pit(war1[i])
+        }
+        #2011  
+          warpos11 <- pos(war11)
+          warpit11 <- pit(war11)
+        #2012
+          warpos12 <- pos(war12)
+          warpit12 <- pit(war12)
+        #2013
+          warpos13 <- pos(war13)
+          warpit13 <- pit(war13)
+        #2014
+          warpos14 <- pos(war14)
+          warpit14 <- pit(war14)
+        #2015
+          warpos15 <- pos(war15)
+          warpit15 <- pit(war15)
+        #2016
+          warpos16 <- pos(war16)
+          warpit16 <- pit(war16)
+        #2017
+          warpos17 <- pos(war17)
+          warpit17 <- pit(war17)
+        #2018
+          warpos18 <- pos(war18)
+          warpit18 <- pit(war18)
 # Data Calculations
   
 # Data Joining
