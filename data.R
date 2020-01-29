@@ -20,7 +20,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     war16 <- read.csv("FanGraphs Leaderboard2016.csv")
     war17 <- read.csv("FanGraphs Leaderboard2017.csv")
     war18 <- read.csv("FanGraphs Leaderboard2018.csv")
-
+    
   #Fielding Independent Pitching (FIP)
     FIPcon <- read.csv("FanGraphs LeaderboardFIP.csv")
     pitching <- read.csv("Pitching.csv")
@@ -49,7 +49,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         arb.clean$`Settled Amt.` <- str_remove_all(arb.clean$`Settled Amt.`, "[$M]")
         arb.clean$Midpoint <- str_remove_all(arb.clean$Midpoint, "[$M]")
         arb.clean$`Team Amt.` <- str_remove_all(arb.clean$`Team Amt.`, "[$M]")
-        arb.clean$`Player Amt.` <- str_remove_all(arb.clean$`Team Amt.`, "[$M]")
+        arb.clean$`Player Amt.` <- str_remove_all(arb.clean$`Player Amt.`, "[$M]")
         arb.clean$Player <- str_remove_all(arb.clean$Player, "[??????]")
         arb.clean$`Settled Amt.` <- as.numeric(arb.clean$`Settled Amt.`)
         arb.clean$Midpoint <- as.numeric(arb.clean$Midpoint)
@@ -83,6 +83,12 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
       #2018
         arb18.clean <- clean(arb18)
         head(arb18.clean)
+    
+    #seperating position players and pitchers
+      
+      #position players
+      
+      #Pitchers
 # Data Calculations
   
 # Data Joining
