@@ -4,6 +4,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
 #Packages
   library(readxl)
   library(dplyr)
+  library(stringr)
 #Data input
 
   #Player Info
@@ -41,7 +42,36 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arb18 <- read_excel("arb2018.xlsx")
 
 # Data Cleaning
-  
+    
+    #arbitration data
+      #2011
+        arb11 <- arb11[,-3]
+        arb11 <- na.omit(arb11)
+        arb11.clean <- arb11
+        arb11.clean$`Settled Amt.` <- str_remove_all(arb11.clean$`Settled Amt.`,"[$M]")
+        arb11.clean$Midpoint <- str_remove_all(arb11.clean$Midpoint, "[$M]")
+        arb11.clean$`Team Amt.` <- str_remove_all(arb11.clean$`Team Amt.`, "[$M]")
+        arb11.clean$`Player Amt.` <- str_remove_all(arb11.clean$`Player Amt.`, "[$M]")
+        
+        head(arb11.clean)
+      #2012
+        arb12 <- arb12[,-3]
+        arb12 <- na.omit(arb12)
+        arb12.clean <- arb12
+        arb12.clean$`Settled Amt.` <- str_remove_all(arb12.clean$`Settled Amt.`, "[$M]")
+        arb12.clean$Midpoint <- str_remove_all(arb12.clean$Midpoint, "[$M]")
+        arb12.clean$`Team Amt.` <- str_remove_all(arb12.clean$`Team Amt.`, "[$M]")
+        arb12.clean$`Player Amt.` <- str_remove_all(arb12.clean$`Player Amt.`, "[$M]")
+        head(arb12.clean)
+      #2013
+        
+      #2014
+      #2015
+      #2016
+      #2017
+      #2018
+     
+      
 # Data Calculations
   
 # Data Joining
