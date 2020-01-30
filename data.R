@@ -95,10 +95,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
           warpit <- filter(war, Pos == "P")
         }
       #Seperating War Data
-        for (i in 1:8) {
-          warpos1[i] <- pos(war1[i])
-          warpit1[i] <- pit(war1[i])
-        }
+       
         #2011  
           warpos11 <- pos(war11)
           warpit11 <- pit(war11)
@@ -126,8 +123,18 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
   
   #Fielding Independent Pitching
       names(player)
+      names(pitching)
+      names(FIPcon)
+      head(FIPcon)
+      FIPcon <- select(FIPcon, ï..Season, cFIP)
       #Formula (13 * HR + 3*(BB + HBP) - 2*K)/(IP) + FIP COnstant
-        
+        pitchers <- left_join(player, pitching, by = c("playerID" = "playerID"), copy = FALSE)
+        pitchers <- select(pitchers, nameFirst, nameLast, yearID, IPouts, HR, SO, BB, IBB, HBP)
+        pitchers <- left_join(pitchers, FIPcon, by = c("yearID" = "ï..Season"), copy = FALSE)
+        pitchers <- filter(pitchers, yearID >=2011)
+        head(pitchers)
+        View(pitchers)
+        names(pitchers)
 # Data Calculations
   
 # Data Joining
