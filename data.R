@@ -41,7 +41,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arb17 <- read_excel("arb2017.xlsx")
     arb18 <- read_excel("arb2018.xlsx")
 
-# Data Cleaning
+# Data Cleaning and Calculations
     #Function for Cleaning Arbitration Data
       clean <- function(arb){
         arb <- arb[,-3]
@@ -132,10 +132,11 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         pitchers <- select(pitchers, nameFirst, nameLast, yearID, IPouts, HR, SO, BB, IBB, HBP)
         pitchers <- left_join(pitchers, FIPcon, by = c("yearID" = "ï..Season"), copy = FALSE)
         pitchers <- filter(pitchers, yearID >=2011)
+        pitchers$FIP <- ((13*pitchers$HR + 3*(pitchers$BB + pitchers$IBB +pitchers$HBP) - 2*pitchers$SO)/(pitchers$IPouts/3))+pitchers$cFIP
         head(pitchers)
         View(pitchers)
         names(pitchers)
-# Data Calculations
+  #OPS100
   
 # Data Joining
   
