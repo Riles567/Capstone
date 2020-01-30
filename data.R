@@ -42,7 +42,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arb18 <- read_excel("arb2018.xlsx")
 
 # Data Cleaning
-    #Function for cleaning
+    #Function for Cleaning Arbitration Data
       clean <- function(arb){
         arb <- arb[,-3]
         arb.clean <- arb
@@ -85,7 +85,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         arb18.clean <- clean(arb18)
         head(arb18.clean)
     
-    #seperating position players and pitchers
+  #seperating position players and pitchers
       
       #Function for position and pitchers
         pos <- function(war){
@@ -123,6 +123,11 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         #2018
           warpos18 <- pos(war18)
           warpit18 <- pit(war18)
+  
+  #Fielding Independent Pitching
+      names(player)
+      #Formula (13 * HR + 3*(BB + HBP) - 2*K)/(IP) + FIP COnstant
+        
 # Data Calculations
   
 # Data Joining
