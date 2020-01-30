@@ -50,7 +50,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         arb.clean$Midpoint <- str_remove_all(arb.clean$Midpoint, "[$M]")
         arb.clean$`Team Amt.` <- str_remove_all(arb.clean$`Team Amt.`, "[$M]")
         arb.clean$`Player Amt.` <- str_remove_all(arb.clean$`Player Amt.`, "[$M]")
-        arb.clean$Player <- str_remove_all(arb.clean$Player, "[??????]")
+        arb.clean$Player <- str_remove_all(arb.clean$Player, "[??????]") #?????? if in [] is ?????
         arb.clean$Player <- trimws(arb.clean$Player, which = "right")
         arb.clean$`Settled Amt.` <- as.numeric(arb.clean$`Settled Amt.`)
         arb.clean$Midpoint <- as.numeric(arb.clean$Midpoint)
