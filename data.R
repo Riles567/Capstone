@@ -5,13 +5,17 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
   library(readxl)
   library(dplyr)
   library(stringr)
+  library(tidyr)
+  library(Stack)
 #Data input
 
   #Player Info
+
     player <- read.csv("People.csv")
     salary <- read.csv("Salaries.csv")
   
   #WAR
+    
     war11 <- read.csv("FanGraphs Leaderboard2011.csv")
     war12 <- read.csv("FanGraphs Leaderboard2012.csv")
     war13 <- read.csv("FanGraphs Leaderboard2013.csv")
@@ -22,16 +26,19 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     war18 <- read.csv("FanGraphs Leaderboard2018.csv")
     head(war11)
   #Fielding Independent Pitching (FIP)
+    
     FIPcon <- read.csv("FanGraphs LeaderboardFIP.csv")
     pitching <- read.csv("Pitching.csv")
   
   #Stats for Calculations
+    
     team <- read.csv("Teams.csv")
     appear <- read.csv("Appearances.csv")  
     field <- read.csv("Fielding.csv")
     batting <- read.csv("Batting.csv")
   
   #arbitration 2011 to 2018
+    
     arb11 <- read_excel("arb2011.xlsx")
     arb12 <- read_excel("arb2012.xlsx")
     arb13 <- read_excel("arb2013.xlsx")
@@ -42,6 +49,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arb18 <- read_excel("arb2018.xlsx")
 
 # Data Cleaning and Calculations
+    
     #Function for Cleaning Arbitration Data
       clean <- function(arb){
         arb <- arb[,-3]
@@ -59,7 +67,9 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         arb.clean <- na.omit(arb.clean)
       }
     #arbitration data
+      
       #all numberic values outside of year is in millions
+      
       #2011
         arb11.clean <- clean(arb11)
         head(arb11.clean)
@@ -121,22 +131,37 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
           warpos18 <- pos(war18)
           warpit18 <- pit(war18)
   
-  #Fielding Independent Pitching
+  #Fielding Independent Pitching and Other predictors for Pitchers
       names(player)
       names(pitching)
       names(FIPcon)
       head(FIPcon)
       FIPcon <- select(FIPcon, ï..Season, cFIP)
+      
       #Formula (13 * HR + 3*(BB + HBP) - 2*K)/(IP) + FIP COnstant
         pitchers <- left_join(player, pitching, by = c("playerID" = "playerID"), copy = FALSE)
+        pitchers <- unite(pitchers, Player, c(nameFirst, nameLast), sep = " ")
         pitchers <- select(pitchers, nameFirst, nameLast, yearID, IPouts, HR, SO, BB, IBB, HBP)
         pitchers <- left_join(pitchers, FIPcon, by = c("yearID" = "ï..Season"), copy = FALSE)
-        pitchers <- filter(pitchers, yearID >=2011)
-        pitchers$FIP <- ((13*pitchers$HR + 3*(pitchers$BB + pitchers$IBB +pitchers$HBP) - 2*pitchers$SO)/(pitchers$IPouts/3))+pitchers$cFIP
+        pitchers <- filter(pitchers, yearID >= 2011, IPouts >= 30, G >= 5)
+        pitchers$FIP <- ((13*pitchers$HR + 3*(pitchers$BB + pitchers$IBB + pitchers$HBP) - 2*pitchers$SO)/(pitchers$IPouts/3))+pitchers$cFIP
+        pitchers$IP <- pitchers$IPouts/3
+        pitchers$WIP <- (pitchers$BB+  pitchers$HBP + pitchers$IBB + pitchers$H)/pitchers$IP
+        pitchers <- select(pitchers, playerID, Player, IP, ERA, FIP, SO, WIP)
         head(pitchers)
         View(pitchers)
         names(pitchers)
+        summary(pitchers)
   #OPS100
   
+  #Predictors for position players
+      # hitting
+        hit <- left_join(player, batting, by = c("playerID" = "playerID"), copy = FALSE)
+        hit <- select(hit, playerID, nameFirst, nameLast, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP)
+        hit <- filter(hit, yearID >= "2011", G >= 10, AB >= 50)
+        
+        head(hit)
+        summary(hit)
+      #fielding
 # Data Joining
   
