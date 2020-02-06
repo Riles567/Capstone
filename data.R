@@ -58,7 +58,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         arb.clean$Midpoint <- str_remove_all(arb.clean$Midpoint, "[$M]")
         arb.clean$`Team Amt.` <- str_remove_all(arb.clean$`Team Amt.`, "[$M]")
         arb.clean$`Player Amt.` <- str_remove_all(arb.clean$`Player Amt.`, "[$M]")
-        arb.clean$Player <- str_remove_all(arb.clean$Player, "[??????]") #?????? if in [] is ?????
+        arb.clean$Player <- str_remove_all(arb.clean$Player, "[‡†]") #‡† if in [] is ?????
         arb.clean$Player <- trimws(arb.clean$Player, which = "right")
         arb.clean$`Settled Amt.` <- as.numeric(arb.clean$`Settled Amt.`)
         arb.clean$Midpoint <- as.numeric(arb.clean$Midpoint)
@@ -136,13 +136,13 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
       names(pitching)
       names(FIPcon)
       head(FIPcon)
-      FIPcon <- select(FIPcon, �..Season, cFIP)
+      FIPcon <- select(FIPcon, ï..Season, cFIP)
       
       #Formula (13 * HR + 3*(BB + HBP) - 2*K)/(IP) + FIP COnstant
         pitchers <- left_join(player, pitching, by = c("playerID" = "playerID"), copy = FALSE)
         pitchers <- unite(pitchers, Player, c(nameFirst, nameLast), sep = " ")
         pitchers <- select(pitchers, nameFirst, nameLast, yearID, IPouts, HR, SO, BB, IBB, HBP)
-        pitchers <- left_join(pitchers, FIPcon, by = c("yearID" = "�..Season"), copy = FALSE)
+        pitchers <- left_join(pitchers, FIPcon, by = c("yearID" = "ï..Season"), copy = FALSE)
         pitchers <- filter(pitchers, yearID >= 2011, IPouts >= 30, G >= 5)
         pitchers$FIP <- ((13*pitchers$HR + 3*(pitchers$BB + pitchers$IBB + pitchers$HBP) - 2*pitchers$SO)/(pitchers$IPouts/3))+pitchers$cFIP
         pitchers$IP <- pitchers$IPouts/3
