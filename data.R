@@ -13,6 +13,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
 
     player <- read.csv("People.csv")
     salary <- read.csv("Salaries.csv")
+    names(field)
   
   #WAR
     
@@ -29,7 +30,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     
     FIPcon <- read.csv("FanGraphs LeaderboardFIP.csv")
     pitching <- read.csv("Pitching.csv")
-  
+  names(FIPcon)
   #Stats for Calculations
     
     team <- read.csv("Teams.csv")
@@ -47,7 +48,18 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arb16 <- read_excel("arb2016.xlsx")
     arb17 <- read_excel("arb2017.xlsx")
     arb18 <- read_excel("arb2018.xlsx")
-
+    
+    head(arb11)
+  #Defensice Runs Saved
+    
+    drs11 <- read.csv("DRS2011.csv")
+    drs12 <- read.csv("DRS2012.csv")
+    drs13 <- read.csv("DRS2013.csv")
+    drs14 <- read.csv("DRS2014.csv")
+    drs15 <- read.csv("DRS2015.csv")
+    drs16 <- read.csv("DRS2016.csv")
+    drs17 <- read.csv("DRS2017.csv")
+    drs18 <- read.csv("DRS2018.csv")
 # Data Cleaning and Calculations
     
     #Function for Cleaning Arbitration Data
@@ -58,7 +70,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         arb.clean$Midpoint <- str_remove_all(arb.clean$Midpoint, "[$M]")
         arb.clean$`Team Amt.` <- str_remove_all(arb.clean$`Team Amt.`, "[$M]")
         arb.clean$`Player Amt.` <- str_remove_all(arb.clean$`Player Amt.`, "[$M]")
-        arb.clean$Player <- str_remove_all(arb.clean$Player, "[‡†]") #‡† if in [] is ?????
+        arb.clean$Player <- str_remove_all(arb.clean$Player, "[‡†]") 
         arb.clean$Player <- trimws(arb.clean$Player, which = "right")
         arb.clean$`Settled Amt.` <- as.numeric(arb.clean$`Settled Amt.`)
         arb.clean$Midpoint <- as.numeric(arb.clean$Midpoint)
@@ -95,6 +107,8 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         arb18.clean <- clean(arb18)
         head(arb18.clean)
     
+    #DRS Data
+        
   #seperating position players and pitchers
       
       #Function for position and pitchers
@@ -146,22 +160,31 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         pitchers <- filter(pitchers, yearID >= 2011, IPouts >= 30, G >= 5)
         pitchers$FIP <- ((13*pitchers$HR + 3*(pitchers$BB + pitchers$IBB + pitchers$HBP) - 2*pitchers$SO)/(pitchers$IPouts/3))+pitchers$cFIP
         pitchers$IP <- pitchers$IPouts/3
-        pitchers$WIP <- (pitchers$BB+  pitchers$HBP + pitchers$IBB + pitchers$H)/pitchers$IP
-        pitchers <- select(pitchers, playerID, Player, IP, ERA, FIP, SO, WIP)
-        head(pitchers)
-        View(pitchers)
-        names(pitchers)
-        summary(pitchers)
+        pitchers$WHIP <- (pitchers$BB+  pitchers$HBP + pitchers$IBB + pitchers$H)/pitchers$IP
+        pitchers <- select(pitchers, playerID, Player, IP, ERA, FIP, SO, WHIP)
+        
   #OPS100
   
   #Predictors for position players
       # hitting
+        hitfield <- select(field, playerID, POS, yearID)
         hit <- left_join(player, batting, by = c("playerID" = "playerID"), copy = FALSE)
-        hit <- select(hit, playerID, nameFirst, nameLast, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP)
+        hit <- unite(hit, playerName, c(nameFirst, nameLast), sep = " ", remove = FALSE)
+        hit <- select(hit, playerID, playerName, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP, SF, SH)
         hit <- filter(hit, yearID >= "2011", G >= 10, AB >= 50)
-        
-        head(hit)
+        hit$SLG <- (hit$H + (2*hit$x2B) + (3*hit$x3B) + (4*hit$HR))/hit$AB
+        hit$AVG <- (hit$H + hit$X2B + hit$X3B + hit$HR)/hit$AB
+        hit$OBP <- (hit$H + hit$BB + hit$IBB + hit$HBP)/(hit$AB + hit$BB + hit$IBB + hit$HBP + hit$SF + hit$SH)
+        hit$OPS <- hit$SLG + hit$OBP
+        hit <- group_by(hit, yearID)
+        hit$lgOBP <- mean(hit$OBP)
+        hit$lgSLG <- mean(hit$SLG)
+        hit$OPSplus <- 100 * ((hit$OBP/hit$lgOBP) + (hit$SLG/hit$lgSLG) - 1)/
         summary(hit)
+        head(hit)
+        View(hit)
       #fielding
 # Data Joining
   
+  #Stacking the arbitration data into one table
+    
