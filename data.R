@@ -58,14 +58,22 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
   #Defensice Runs Saved
     
     drs11 <- read.csv("DRS2011.csv")
+    drs11$year <- 2011
     drs12 <- read.csv("DRS2012.csv")
+    drs12$year <- 2012
     drs13 <- read.csv("DRS2013.csv")
+    drs13$year <- 2013
     drs14 <- read.csv("DRS2014.csv")
+    drs14$year <- 2014
     drs15 <- read.csv("DRS2015.csv")
+    drs15$year <- 2015
     drs16 <- read.csv("DRS2016.csv")
+    drs16$year <- 2016
     drs17 <- read.csv("DRS2017.csv")
+    drs17$year <- 2017
     drs18 <- read.csv("DRS2018.csv")
-
+    drs18$year <- 2018
+    
 # Data Cleaning and Calculations
     
     #Function for Cleaning Arbitration Data
@@ -178,11 +186,14 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         hit$RC <- (hit$H + hit$BB - hit$CS + hit$HBP - hit$GIDP)*((hit$H + (2*hit$X2B) + (3*hit$X3B) + 
                       (4*hit$HR)+(.26*(hit$BB - hit$IBB + hit$HBP))+(.52*(hit$SH + hit$SF + hit$SB))))/(hit$AB + hit$BB + hit$HBP + hit$SH + hit$SF)
       
+        hit <- left_join(hit, drs, by = c("playerName" = "ï..Name" , "yearID" = "year"), copy = FALSE)
+        hit <- select(hit, playerName, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP, SF, SH, SLG, AVG, OBP, lgOBP, lgSLG, OPSplus, RC, Team, Pos, Inn, DRS)
+        help("left_join")
         summary(hit)
         head(hit)
         View(hit)
         names(hit)
-      #fielding
+        head(drs11)
 # Data Joining
   
   #Combining War and Arbitration data sets
@@ -232,6 +243,17 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     
     View(arbwarpos)
     head(arbwarpos)
+  # DRs Stack
+    drs <- Stack(drs11,drs12)
+    drs <- Stack(drs, drs13)
+    drs <- Stack(drs, drs14)
+    drs <- Stack(drs, drs15)
+    drs <- Stack(drs, drs16)
+    drs <- Stack(drs, drs17)
+    drs <- Stack(drs, drs18)
   #combining arbwar data with pitching data
   
   #combining arbwar data with position players data
+    hit <- left_join(hit, drs, by = c("playerName" = "ï..Name" , "yearID" = "year"), copy = FALSE)
+    hit <- select(hit, playerName, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP, SF, SH, SLG, AVG, OBP, lgOBP, lgSLG, OPSplus, RC, Pos, Inn, DRS)
+    
