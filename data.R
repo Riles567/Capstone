@@ -1,12 +1,15 @@
 setwd("C:/Users/yz9186ci/Desktop/Capstone/DATA") # Labtop
 setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
 
+#Make sure when opening up the code to open with encoding of UTF-8 for names to work
+
 #Packages
   library(readxl)
   library(dplyr)
   library(stringr)
   library(tidyr)
   library(Stack)
+  
 #Data input
 
   #Player Info
@@ -73,6 +76,9 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     drs17$year <- 2017
     drs18 <- read.csv("DRS2018.csv")
     drs18$year <- 2018
+  
+  # Ball pack factors
+    park <- read.csv("ballpark_factors.csv")
     
 # Data Cleaning and Calculations
     
@@ -94,6 +100,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         arb.clean$`Player Amt.` <- as.numeric(arb.clean$`Player Amt.`)
         arb.clean <- na.omit(arb.clean)
       }
+      
     #arbitration data
       
       #all numberic values outside of year is in millions
@@ -169,8 +176,8 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         pitchers <- select(pitchers, Player, yearID, IP, ERA, FIP, SO, WHIP)
 
   #Predictors for position players
+        
       # hitting
-        hitfield <- select(field, playerID, POS, yearID)
         hit <- left_join(player, batting, by = c("playerID" = "playerID"), copy = FALSE)
         hit <- unite(hit, playerName, c(nameFirst, nameLast), sep = " ", remove = FALSE)
         hit <- select(hit, playerID, playerName, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP, SF, SH)
@@ -179,20 +186,19 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         hit$AVG <- (hit$H + hit$X2B + hit$X3B + hit$HR)/hit$AB
         hit$OBP <- (hit$H + hit$BB + hit$IBB + hit$HBP)/(hit$AB + hit$BB + hit$IBB + hit$HBP + hit$SF + hit$SH)
         hit$OPS <- hit$SLG + hit$OBP
-        hit <- group_by(hit, yearID)
-        hit$lgOBP <- mean(hit$OBP)
-        hit$lgSLG <- mean(hit$SLG)
-        hit$OPSplus <- 100 * ((hit$OBP/hit$lgOBP) + (hit$SLG/hit$lgSLG) - 1)/1
         hit$RC <- (hit$H + hit$BB - hit$CS + hit$HBP - hit$GIDP)*((hit$H + (2*hit$X2B) + (3*hit$X3B) + 
-                      (4*hit$HR)+(.26*(hit$BB - hit$IBB + hit$HBP))+(.52*(hit$SH + hit$SF + hit$SB))))/(hit$AB + hit$BB + hit$HBP + hit$SH + hit$SF)
-      
-        hit <- left_join(hit, drs, by = c("playerName" = "ï..Name" , "yearID" = "year"), copy = FALSE)
-        hit <- select(hit, playerName, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP, SF, SH, SLG, AVG, OBP, lgOBP, lgSLG, OPSplus, RC, Team, Pos, Inn, DRS)
-        help("left_join")
+                    (4*hit$HR)+(.26*(hit$BB - hit$IBB + hit$HBP))+(.52*(hit$SH + hit$SF + hit$SB))))/(hit$AB + hit$BB + hit$HBP + hit$SH + hit$SF)
+        hit <- group_by(hit, yearID)
+        hitgroup <- summarise(hit, lgOBP = mean(OBP, na.rm = TRUE), lgSLG = mean(SLG, na.rm = TRUE))
+        hit <- ungroup(hit)
+        hit <- left_join(hit, hitgroup, by = c("yearID" = "yearID"), copy = FALSE)
+        hit <- left_join(hit, park, by = c(""))
+        hit$OPSplus <- 100 * ((hit$OBP/hit$lgOBP) + (hit$SLG/hit$lgSLG) - 1)/1
+        names(park)
         summary(hit)
         head(hit)
         View(hit)
-        names(hit)
+        names(hitgroup)
         head(drs11)
 # Data Joining
   
@@ -228,7 +234,12 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arbwarpit <- Stack(arbwarpit, arbwarpit18)
     arbwarpit <- arbwarpit[,-11]
     arbwarpit <- na.omit(arbwarpit)
-    head(arbwarpit)
+    arbwarpit$outcome <-  arbwarpit$outcome <- ifelse(arbwarpit$`Settled Amt.` > arbwarpit$Midpoint, 1,
+                            ifelse(arbwarpit$`Settled Amt.`< arbwarpit$Midpoint, 3, 2))
+  str(arbwarpit)
+     View(arbwarpit)  
+     names(arbwarpit)
+     
   #WAR Position players
     arbwarpos <- Stack(arbwarpos11, arbwarpos12)
     arbwarpos <- Stack(arbwarpos, arbwarpos13)
@@ -239,10 +250,10 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arbwarpos <- Stack(arbwarpos, arbwarpos18)
     arbwarpos <- arbwarpos[,-12]
     arbwarpos <- na.omit(arbwarpos)
-    arbwarpos <- select()
-    
+    arbwarpos$outcome <- ifelse(arbwarpos$`Settled Amt.` > arbwarpos$Midpoint, 1,
+           ifelse(arbwarpos$`Settled Amt.`< arbwarpos$Midpoint, 3, 2))
+                           
     View(arbwarpos)
-    head(arbwarpos)
   # DRs Stack
     drs <- Stack(drs11,drs12)
     drs <- Stack(drs, drs13)
@@ -251,9 +262,16 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     drs <- Stack(drs, drs16)
     drs <- Stack(drs, drs17)
     drs <- Stack(drs, drs18)
+    
   #combining arbwar data with pitching data
-  
+    head(pitchers)
+    head(arbwarpit)
+    names(pitch)
+    pitch <- left_join(arbwarpit, pitchers, by = c("Player" = "Player", "Year.x" = "yearID"), copy = FALSE)
+    pitch <- na.omit(pitch)
+    pitch <- select(pitch, Player, Team = Team.x, `Player Amt.`, `Team Amt.`, Midpoint, `Settled Amt.`, Pos, IP = IP.y, ERA, SO, WHIP, FIP, WAR = Total.WAR, outcome)
+    
   #combining arbwar data with position players data
     hit <- left_join(hit, drs, by = c("playerName" = "ï..Name" , "yearID" = "year"), copy = FALSE)
-    hit <- select(hit, playerName, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP, SF, SH, SLG, AVG, OBP, lgOBP, lgSLG, OPSplus, RC, Pos, Inn, DRS)
+    hit <- select(hit, playerName, yearID, G, AB, R, H, HR, RBI, SB, SO, AVG, OPSplus, RC, Pos, Inn, DRS)
     
