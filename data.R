@@ -11,8 +11,6 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
   library(Stack)
   library(caret)
   library(nnet)
-load("Regression.Rdata")
-load("mult.Rdata") 
 #Data input
 
   #Player Info
@@ -42,7 +40,6 @@ load("mult.Rdata")
     
     FIPcon <- read.csv("FanGraphs LeaderboardFIP.csv")
     pitching <- read.csv("Pitching.csv")
-    View(pitching)
   #Stats for Calculations
     
     team <- read.csv("Teams.csv")
@@ -278,8 +275,8 @@ load("mult.Rdata")
   #combining arbwar data with pitching data
     pitch <- left_join(arbwarpit, pitchers, by = c("Player" = "Player", "Year.x" = "yearID"), copy = FALSE)
     pitch <- na.omit(pitch)
-    pitch <- select(pitch, Player, Team = Team.x, `Player Amt.`, `Team Amt.`, Midpoint, `Settled Amt.`, Pos, IP = IP.y, ERA, SO, WHIP, FIP, WAR = Total.WAR, outcome)
-  head(pitch)
+    pitch <- select(pitch, Player, Team = Team.x, `Player Amt.`, `Team Amt.`, Midpoint, IP = IP.y, ERA, SO, WHIP, FIP, WAR = Total.WAR, outcome)
+
   #combining arbwar data with position players data
     hit <- left_join(hit, drs, by = c("playerName" = "ï..Name" , "yearID" = "year"), copy = FALSE)
     hit <- select(hit, playerName, yearID, G, AB, R, H, HR, RBI, SB, SO, AVG, OPSplus, RC, Pos, Inn, DRS)
@@ -288,11 +285,23 @@ load("mult.Rdata")
   
   
   #Transforming data
-    names(pitch)
-    pitch.trans <- pitch
-    pitch.bc <- preProcess(pitch, method = "BoxCox")
-    pitch.bc$bc
-    hist(pitch$`Team Amt.`)
+    
+    #pitching data
+      summary(pitch)
+      names(pitch)
+      pitch.trans <- pitch
+      pitch.bc <- preProcess(pitch, method = "BoxCox")
+      pitch.bc$bc
+      pitch.trans$`Player Amt.` <- pitch.trans$`Player Amt.`^(1/10)
+      pitch.trans$`Team Amt.` <- pitch.trans$`Team Amt.`^(3/10)
+      pitch.trans$Midpoint <- pitch.trans$Midpoint^(1/5)
+      pitch.trans$IP <- pitch.trans$IP^(1/10)
+      pitch.trans$SO <- pitch.trans$SO^(1/5)
+      pitch.trans$WHIP <- pitch.trans$WHIP^(3/10)
+      pitch.trans$FIP <- pitch.trans$FIP^(4/5)
+      pitch.trans$outcome <- pitch.trans$outcome^(1/2)
+    #Position Player data
+      
   #Neural Networks 
     #functions
     nnet.sscv <- function(x,y,fit,p=.667,B=100,size=3,decay=fit$decay,skip=T,
@@ -327,10 +336,13 @@ load("mult.Rdata")
       return(temp)
     }
     #implentation
-    pitch.nn <- nnet(outcome ~., data = pitch, size = 3, lineout = T, skip = T, maxit = 100, decay = .01)
-    pit.x <- pitch[,-14]    
-    pit.y <- pitch[,14]
-    result <- nnet.sscv(pit.x, pit.y, pitch.nn, size = 3)    
+    names(pitch)
+    pitch.test <- pitch.trans[,-1]
+    pitch.nn <- nnet(outcome ~., data = pitch.test, size = 10, lineout = T, skip = T, maxit = 100, decay = .01)
+    pit.x <- pitch.test[,-pitch.test$outcome]    
+    pit.y <- pitch.test[,pitch.test$outcome]
+    nrow(pit.x)
+    result <- nnet.sscv(pit.x, pit.y, pitch.nn, size = 10)    
     summary(result)
     head(pit.x)
     head(pit.y)
