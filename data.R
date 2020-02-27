@@ -9,7 +9,10 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
   library(stringr)
   library(tidyr)
   library(Stack)
-  
+  library(caret)
+  library(nnet)
+load("Regression.Rdata")
+load("mult.Rdata") 
 #Data input
 
   #Player Info
@@ -39,14 +42,14 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     
     FIPcon <- read.csv("FanGraphs LeaderboardFIP.csv")
     pitching <- read.csv("Pitching.csv")
-
+    View(pitching)
   #Stats for Calculations
     
     team <- read.csv("Teams.csv")
     appear <- read.csv("Appearances.csv")  
     field <- read.csv("Fielding.csv")
     batting <- read.csv("Batting.csv")
-  
+    
   #arbitration 2011 to 2018
     
     arb11 <- read_excel("arb2011.xlsx")
@@ -78,8 +81,25 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     drs18$year <- 2018
   
   # Ball pack factors
-    park <- read.csv("ballpark_factors.csv")
-    
+    park11 <- read.csv("ballpark_factors11.csv")
+    park12 <- read.csv("ballpark_factors12.csv")
+    park13 <- read.csv("ballpark_factors13.csv")
+    park14 <- read.csv("ballpark_factors14.csv")
+    park15 <- read.csv("ballpark_factors15.csv")
+    park16 <- read.csv("ballpark_factors16.csv")
+    park17 <- read.csv("ballpark_factors17.csv")
+    park18 <- read.csv("ballpark_factors18.csv")
+
+  #Park Factors stack
+    park <- Stack(park11, park12)
+    park <- Stack(park, park13)
+    park <- Stack(park, park14)
+    park <- Stack(park, park15)
+    park <- Stack(park, park16)
+    park <- Stack(park, park17)
+    park <- Stack(park, park18)
+    park <- select(park, year = ï..Season, Team, Basic)
+
 # Data Cleaning and Calculations
     
     #Function for Cleaning Arbitration Data
@@ -180,7 +200,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
       # hitting
         hit <- left_join(player, batting, by = c("playerID" = "playerID"), copy = FALSE)
         hit <- unite(hit, playerName, c(nameFirst, nameLast), sep = " ", remove = FALSE)
-        hit <- select(hit, playerID, playerName, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP, SF, SH)
+        hit <- select(hit, playerID, playerName, teamID, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP, SF, SH)
         hit <- filter(hit, yearID >= "2011", G >= 10, AB >= 50)
         hit$SLG <- (hit$H + (2*hit$X2B) + (3*hit$X3B) + (4*hit$HR))/hit$AB
         hit$AVG <- (hit$H + hit$X2B + hit$X3B + hit$HR)/hit$AB
@@ -192,14 +212,11 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         hitgroup <- summarise(hit, lgOBP = mean(OBP, na.rm = TRUE), lgSLG = mean(SLG, na.rm = TRUE))
         hit <- ungroup(hit)
         hit <- left_join(hit, hitgroup, by = c("yearID" = "yearID"), copy = FALSE)
-        hit <- left_join(hit, park, by = c(""))
-        hit$OPSplus <- 100 * ((hit$OBP/hit$lgOBP) + (hit$SLG/hit$lgSLG) - 1)/1
-        names(park)
-        summary(hit)
+        hit <- left_join(hit, park, by = c("yearID" = "year", "teamID" = "Team"), copy = FALSE)
+        hit$OPSplus <- 100 * ((hit$OBP/hit$lgOBP) + (hit$SLG/hit$lgSLG) - 1)/hit$Basic
+        str(hit)
+        str(park)
         head(hit)
-        View(hit)
-        names(hitgroup)
-        head(drs11)
 # Data Joining
   
   #Combining War and Arbitration data sets
@@ -236,10 +253,6 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arbwarpit <- na.omit(arbwarpit)
     arbwarpit$outcome <-  arbwarpit$outcome <- ifelse(arbwarpit$`Settled Amt.` > arbwarpit$Midpoint, 1,
                             ifelse(arbwarpit$`Settled Amt.`< arbwarpit$Midpoint, 3, 2))
-  str(arbwarpit)
-     View(arbwarpit)  
-     names(arbwarpit)
-     
   #WAR Position players
     arbwarpos <- Stack(arbwarpos11, arbwarpos12)
     arbwarpos <- Stack(arbwarpos, arbwarpos13)
@@ -253,8 +266,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arbwarpos$outcome <- ifelse(arbwarpos$`Settled Amt.` > arbwarpos$Midpoint, 1,
            ifelse(arbwarpos$`Settled Amt.`< arbwarpos$Midpoint, 3, 2))
                            
-    View(arbwarpos)
-  # DRs Stack
+  #DRs Stack
     drs <- Stack(drs11,drs12)
     drs <- Stack(drs, drs13)
     drs <- Stack(drs, drs14)
@@ -264,14 +276,66 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     drs <- Stack(drs, drs18)
     
   #combining arbwar data with pitching data
-    head(pitchers)
-    head(arbwarpit)
-    names(pitch)
     pitch <- left_join(arbwarpit, pitchers, by = c("Player" = "Player", "Year.x" = "yearID"), copy = FALSE)
     pitch <- na.omit(pitch)
     pitch <- select(pitch, Player, Team = Team.x, `Player Amt.`, `Team Amt.`, Midpoint, `Settled Amt.`, Pos, IP = IP.y, ERA, SO, WHIP, FIP, WAR = Total.WAR, outcome)
-    
+  head(pitch)
   #combining arbwar data with position players data
     hit <- left_join(hit, drs, by = c("playerName" = "ï..Name" , "yearID" = "year"), copy = FALSE)
     hit <- select(hit, playerName, yearID, G, AB, R, H, HR, RBI, SB, SO, AVG, OPSplus, RC, Pos, Inn, DRS)
     
+# Predictive model building
+  
+  
+  #Transforming data
+    names(pitch)
+    pitch.trans <- pitch
+    pitch.bc <- preProcess(pitch, method = "BoxCox")
+    pitch.bc$bc
+    hist(pitch$`Team Amt.`)
+  #Neural Networks 
+    #functions
+    nnet.sscv <- function(x,y,fit,p=.667,B=100,size=3,decay=fit$decay,skip=T,
+                          linout=T,maxit=10000){
+      n = length(y)
+      MSEP = rep(0,B)
+      MAEP = rep(0,B)
+      MAPEP = rep(0,B)
+      ss = floor(n*p)
+      for (i in 1:B){
+        sam = sample(1:n,ss,replace=F)
+        fit2 = nnet(x[sam,],y[sam],size=size,linout=linout,skip=skip,decay=decay,
+                    maxit=maxit,trace=F)
+        ynew = predict(fit2,newdata=x[-sam,])
+        MSEP[i]=mean((y[-sam]-ynew)^2)
+        MAEP[i]=mean(abs(y[-sam]-ynew))
+        MAPEP[i]=mean(abs(y[-sam]-ynew)/y[-sam])
+      }
+      RMSEP = sqrt(mean(MSEP))
+      MAE = mean(MAEP)
+      MAPE = mean(MAPEP)
+      cat("RMSEP\n")
+      cat("===============\n")
+      cat(RMSEP,"\n\n")
+      cat("MAE\n")
+      cat("===============\n")
+      cat(MAE,"\n\n")
+      cat("MAPE\n")
+      cat("===============\n")
+      cat(MAPE,"\n\n")
+      temp = data.frame(MSEP=MSEP,MAEP=MAEP,MAPEP=MAPEP)
+      return(temp)
+    }
+    #implentation
+    pitch.nn <- nnet(outcome ~., data = pitch, size = 3, lineout = T, skip = T, maxit = 100, decay = .01)
+    pit.x <- pitch[,-14]    
+    pit.y <- pitch[,14]
+    result <- nnet.sscv(pit.x, pit.y, pitch.nn, size = 3)    
+    summary(result)
+    head(pit.x)
+    head(pit.y)
+    
+    
+    
+    
+   
