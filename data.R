@@ -43,6 +43,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
   #Stats for Calculations
     
     team <- read.csv("Teams.csv")
+    team <- filter(team, yearID >= 2011)
     appear <- read.csv("Appearances.csv")  
     field <- read.csv("Fielding.csv")
     batting <- read.csv("Batting.csv")
@@ -198,6 +199,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         hit <- left_join(player, batting, by = c("playerID" = "playerID"), copy = FALSE)
         hit <- unite(hit, playerName, c(nameFirst, nameLast), sep = " ", remove = FALSE)
         hit <- select(hit, playerID, playerName, teamID, yearID, G, AB, R, H, X2B, X3B, HR, RBI, SB, CS, BB, SO, IBB, HBP, GIDP, SF, SH)
+        
         hit <- filter(hit, yearID >= "2011", G >= 10, AB >= 50)
         hit$SLG <- (hit$H + (2*hit$X2B) + (3*hit$X3B) + (4*hit$HR))/hit$AB
         hit$AVG <- (hit$H + hit$X2B + hit$X3B + hit$HR)/hit$AB
@@ -209,11 +211,23 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         hitgroup <- summarise(hit, lgOBP = mean(OBP, na.rm = TRUE), lgSLG = mean(SLG, na.rm = TRUE))
         hit <- ungroup(hit)
         hit <- left_join(hit, hitgroup, by = c("yearID" = "yearID"), copy = FALSE)
-        hit <- left_join(hit, park, by = c("yearID" = "year", "teamID" = "Team"), copy = FALSE)
+        team <- filter(team,yearID >= 2018)
+        team <- select(team,teamID,name,mascot)
+        team$mascot <- gsub(".*\\ ","",team$name,ignore.case = T)
+        team$Mascot <- ifelse(team$teamID == "BOS",str_replace(team$mascot,"Sox","Red Sox"),
+                              ifelse(team$teamID == "CHA", str_replace(team$mascot,"Sox","White Sox"),
+                                    ifelse(team$teamID == "LAA", str_replace(team$mascot,"Anaheim","Angels"),
+                                           ifelse(team$teamID == "TOR",str_replace(team$mascot,"Jays", "Blue Jays"),team$mascot))))
+        team <- select(team, teamID, name, Mascot)
+        park <- left_join(park, team, by = c("Team" = "Mascot"), copy = FALSE)
+        hit <- left_join(hit, park, by = c("yearID" = "year", "teamID" = "teamID"), copy = FALSE)
         hit$OPSplus <- 100 * ((hit$OBP/hit$lgOBP) + (hit$SLG/hit$lgSLG) - 1)/hit$Basic
         str(hit)
         str(park)
         head(hit)
+        head(park)
+        View(park)
+        head(team)
 # Data Joining
   
   #Combining War and Arbitration data sets
@@ -248,8 +262,10 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arbwarpit <- Stack(arbwarpit, arbwarpit18)
     arbwarpit <- arbwarpit[,-11]
     arbwarpit <- na.omit(arbwarpit)
-    arbwarpit$outcome <-  arbwarpit$outcome <- ifelse(arbwarpit$`Settled Amt.` > arbwarpit$Midpoint, 1,
+    arbwarpit$outcome <- ifelse(arbwarpit$`Settled Amt.` > arbwarpit$Midpoint, 1,
                             ifelse(arbwarpit$`Settled Amt.`< arbwarpit$Midpoint, 3, 2))
+    arbwarpit$outcome <- as.factor(arbwarpit$outcome)
+  
   #WAR Position players
     arbwarpos <- Stack(arbwarpos11, arbwarpos12)
     arbwarpos <- Stack(arbwarpos, arbwarpos13)
@@ -261,8 +277,9 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     arbwarpos <- arbwarpos[,-12]
     arbwarpos <- na.omit(arbwarpos)
     arbwarpos$outcome <- ifelse(arbwarpos$`Settled Amt.` > arbwarpos$Midpoint, 1,
-           ifelse(arbwarpos$`Settled Amt.`< arbwarpos$Midpoint, 3, 2))
-                           
+                            ifelse(arbwarpos$`Settled Amt.`< arbwarpos$Midpoint, 3, 2))
+    arbwarpos$outcome <- as.factor(arbwarpos$outcome)
+  
   #DRs Stack
     drs <- Stack(drs11,drs12)
     drs <- Stack(drs, drs13)
@@ -275,20 +292,20 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
   #combining arbwar data with pitching data
     pitch <- left_join(arbwarpit, pitchers, by = c("Player" = "Player", "Year.x" = "yearID"), copy = FALSE)
     pitch <- na.omit(pitch)
-    pitch <- select(pitch, Player, Team = Team.x, `Player Amt.`, `Team Amt.`, Midpoint, IP = IP.y, ERA, SO, WHIP, FIP, WAR = Total.WAR, outcome)
+    pitch <- select(pitch, Player, `Player Amt.`, `Team Amt.`, Midpoint, IP = IP.y, ERA, SO, WHIP, FIP, WAR = Total.WAR, outcome)
 
   #combining arbwar data with position players data
     hit <- left_join(hit, drs, by = c("playerName" = "ï..Name" , "yearID" = "year"), copy = FALSE)
     hit <- select(hit, playerName, yearID, G, AB, R, H, HR, RBI, SB, SO, AVG, OPSplus, RC, Pos, Inn, DRS)
-    
+    hit <- left_join(arbwarpos, hit, by = c("Player" = "playerName", "Year.x" = "yearID"))
+    hit <- na.omit(hit)
+    hit <- select(hit, Player, `Player Amt.`, `Team Amt.`, Midpoint, WAR = Total.WAR, AVG, OPSplus, RC, DRS, RBI, outcome)
+
 # Predictive model building
-  
   
   #Transforming data
     
     #pitching data
-      summary(pitch)
-      names(pitch)
       pitch.trans <- pitch
       pitch.bc <- preProcess(pitch, method = "BoxCox")
       pitch.bc$bc
@@ -299,13 +316,23 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
       pitch.trans$SO <- pitch.trans$SO^(1/5)
       pitch.trans$WHIP <- pitch.trans$WHIP^(3/10)
       pitch.trans$FIP <- pitch.trans$FIP^(4/5)
-      pitch.trans$outcome <- pitch.trans$outcome^(1/2)
     #Position Player data
-      
+      hit.trans <- hit
+      hit.bc <- preProcess(hit, method = "BoxCox")
+      hit.bc$bc
+      hit.trans$`Player Amt.` <- log(hit.trans$`Player Amt.`)
+      hit.trans$`Team Amt.` <- hit.trans$`Team Amt.`^(-.1)
+      hit.trans$Midpoint <- log(hit.trans$Midpoint)
+      hit.trans$AVG <- hit.trans$AVG^(9/10)
+      hit.trans$OPSplus <- hit.trans$OPSplus^(9/10)
+      hit.trans$RC <- hit.trans$RC^(3/10)
+      hit.trans$RBI <- hit.trans$RBI^(2/5)
   #Neural Networks 
     #functions
-    nnet.sscv <- function(x,y,fit,p=.667,B=100,size=3,decay=fit$decay,skip=T,
-                          linout=T,maxit=10000){
+    nnet.sscv <- function(x,y,fit,p=.667,B=100,size=3,decay=fit$decay,
+                          maxit=10000){
+      print(dim(x))
+      print(length(y))
       n = length(y)
       MSEP = rep(0,B)
       MAEP = rep(0,B)
@@ -313,8 +340,11 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
       ss = floor(n*p)
       for (i in 1:B){
         sam = sample(1:n,ss,replace=F)
-        fit2 = nnet(x[sam,],y[sam],size=size,linout=linout,skip=skip,decay=decay,
+        print(nrow(x[sam,]))
+        print(nrow(y[sam]))
+        fit2 = nnet(x[sam,],y[sam],size=size,linout=F,skip=F,decay=decay,
                     maxit=maxit,trace=F)
+        
         ynew = predict(fit2,newdata=x[-sam,])
         MSEP[i]=mean((y[-sam]-ynew)^2)
         MAEP[i]=mean(abs(y[-sam]-ynew))
@@ -336,18 +366,30 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
       return(temp)
     }
     #implentation
-    names(pitch)
+    names(pitch.trans)
     pitch.test <- pitch.trans[,-1]
-    pitch.nn <- nnet(outcome ~., data = pitch.test, size = 10, lineout = T, skip = T, maxit = 100, decay = .01)
-    pit.x <- pitch.test[,-pitch.test$outcome]    
-    pit.y <- pitch.test[,pitch.test$outcome]
+    names(pitch.test)
+    pitch.nn <- nnet(outcome ~., data = pitch.test, size = 10, maxit = 100, decay = .01)
+    pit.x <- select(pitch.test,`Player Amt.`, `Team Amt.`, Midpoint, IP, ERA, SO, WHIP, FIP, WAR)    
+    pit.y <- select(pitch.test,outcome)
+    names(pit.y)
+    View(pit.y)
     nrow(pit.x)
-    result <- nnet.sscv(pit.x, pit.y, pitch.nn, size = 10)    
+    nrow(pit.y)
+    result <- nnet.sscv(pit.x, pit.y, pitch.nn, size = 3)    
     summary(result)
     head(pit.x)
     head(pit.y)
+    str(pitch)
+    names(pitch.test)    
     
-    
-    
-    
-   
+      #position players
+        names(hit)
+        hit.test <- hit.trans[,-1]
+        hit.nn <- nnet(outcome~., data = hit.test, size = 10, maxit = 100, decay = .01)
+        hit.test$outcome <- as.factor(hit$outcome)
+        hit.x <- hit.test[,-hit.test$outcome]
+        hit.y <- hit.test[,hit.test$outcome]
+        result.hit <- nnet.sscv(hit.x,hit.y,hit.nn,size = 10)
+        table(hit$outcome)
+        
