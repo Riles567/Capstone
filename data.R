@@ -11,6 +11,8 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
   library(Stack)
   library(caret)
   library(nnet)
+  library(devtools)
+  source('https://gist.githubusercontent.com/fawda123/7471137/raw/466c1474d0a505ff044412703516c34f1a4684a5/nnet_plot_update.r')
 #Data input
 
   #Player Info
@@ -212,7 +214,6 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         hit <- ungroup(hit)
         hit <- left_join(hit, hitgroup, by = c("yearID" = "yearID"), copy = FALSE)
         team <- filter(team,yearID >= 2018)
-        team <- select(team,teamID,name,mascot)
         team$mascot <- gsub(".*\\ ","",team$name,ignore.case = T)
         team$Mascot <- ifelse(team$teamID == "BOS",str_replace(team$mascot,"Sox","Red Sox"),
                               ifelse(team$teamID == "CHA", str_replace(team$mascot,"Sox","White Sox"),
@@ -222,12 +223,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         park <- left_join(park, team, by = c("Team" = "Mascot"), copy = FALSE)
         hit <- left_join(hit, park, by = c("yearID" = "year", "teamID" = "teamID"), copy = FALSE)
         hit$OPSplus <- 100 * ((hit$OBP/hit$lgOBP) + (hit$SLG/hit$lgSLG) - 1)/hit$Basic
-        str(hit)
-        str(park)
-        head(hit)
-        head(park)
-        View(park)
-        head(team)
+
 # Data Joining
   
   #Combining War and Arbitration data sets
@@ -307,7 +303,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     
     #pitching data
       pitch.trans <- pitch
-      pitch.bc <- preProcess(pitch, method = "BoxCox")
+      pitch.bc <- preProcess(pitch, method = "BoxCox")  #need package e1071 installed but don't needed it loaded 
       pitch.bc$bc
       pitch.trans$`Player Amt.` <- pitch.trans$`Player Amt.`^(1/10)
       pitch.trans$`Team Amt.` <- pitch.trans$`Team Amt.`^(3/10)
@@ -329,67 +325,55 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
       hit.trans$RBI <- hit.trans$RBI^(2/5)
   #Neural Networks 
     #functions
-    nnet.sscv <- function(x,y,fit,p=.667,B=100,size=3,decay=fit$decay,
-                          maxit=10000){
-      print(dim(x))
-      print(length(y))
-      n = length(y)
-      MSEP = rep(0,B)
-      MAEP = rep(0,B)
-      MAPEP = rep(0,B)
-      ss = floor(n*p)
-      for (i in 1:B){
-        sam = sample(1:n,ss,replace=F)
-        print(nrow(x[sam,]))
-        print(nrow(y[sam]))
-        fit2 = nnet(x[sam,],y[sam],size=size,linout=F,skip=F,decay=decay,
-                    maxit=maxit,trace=F)
-        
-        ynew = predict(fit2,newdata=x[-sam,])
-        MSEP[i]=mean((y[-sam]-ynew)^2)
-        MAEP[i]=mean(abs(y[-sam]-ynew))
-        MAPEP[i]=mean(abs(y[-sam]-ynew)/y[-sam])
+      misclass.nnet <- function(fit,y) {
+        temp <- table(predict(fit,type="class"),y)
+        cat("Table of Misclassification\n")
+        cat("(row = predicted, col = actual)\n")
+        print(temp)
+        cat("\n\n")
+        numcor <- sum(diag(temp))
+        numinc <- length(y) - numcor
+        mcr <- numinc/length(y)
+        cat(paste("Misclassification Rate = ",format(mcr,digits=3)))
+        cat("\n")
       }
-      RMSEP = sqrt(mean(MSEP))
-      MAE = mean(MAEP)
-      MAPE = mean(MAPEP)
-      cat("RMSEP\n")
-      cat("===============\n")
-      cat(RMSEP,"\n\n")
-      cat("MAE\n")
-      cat("===============\n")
-      cat(MAE,"\n\n")
-      cat("MAPE\n")
-      cat("===============\n")
-      cat(MAPE,"\n\n")
-      temp = data.frame(MSEP=MSEP,MAEP=MAEP,MAPEP=MAPEP)
-      return(temp)
-    }
+      
+      cnnet.cv = function (fit, y, data, B = 25, p = 0.667, size = 5, decay = 0.001, maxit = 1000,trace=T) 
+      {
+        n <- length(y)
+        cv <- rep(0, B)
+        nin <- floor(n * p)
+        out <- n - nin
+        for (i in 1:B) {
+          sam <- sample(1:n, nin)
+          temp <- data[sam, ]
+          fit2 <- nnet(formula(fit), data = temp, size = size, 
+                       decay = decay, maxit = maxit,trace=trace)
+          ynew <- predict(fit2, newdata = data[-sam, ], type = "class")
+          tab <- table(y[-sam], ynew)
+          mc <- out - sum(diag(tab))
+          cv[i] <- mc/out
+        }
+        cv
+      }
+      
     #implentation
-    names(pitch.trans)
-    pitch.test <- pitch.trans[,-1]
-    names(pitch.test)
-    pitch.nn <- nnet(outcome ~., data = pitch.test, size = 10, maxit = 100, decay = .01)
-    pit.x <- select(pitch.test,`Player Amt.`, `Team Amt.`, Midpoint, IP, ERA, SO, WHIP, FIP, WAR)    
-    pit.y <- select(pitch.test,outcome)
-    names(pit.y)
-    View(pit.y)
-    nrow(pit.x)
-    nrow(pit.y)
-    result <- nnet.sscv(pit.x, pit.y, pitch.nn, size = 3)    
-    summary(result)
-    head(pit.x)
-    head(pit.y)
-    str(pitch)
-    names(pitch.test)    
-    
+      #Pitchers
+        names(pitch.trans)
+        pitch.test <- pitch.trans[,-1]
+        names(pitch.test)
+        pitch.nn <- nnet(outcome ~., data = pitch.test, size = 10, maxit = 5000, decay = .001)
+        pitch.miss <- misclass.nnet(pitch.nn, pitch.test$outcome)
+        pitch.cv <- cnnet.cv(pitch.nn, pitch.test$outcome, pitch.test, size = 10, decay = .001, maxit = 10000)
+        summary(pitch.cv)
+        plot.nnet(pitch.nn)
       #position players
         names(hit)
         hit.test <- hit.trans[,-1]
         hit.nn <- nnet(outcome~., data = hit.test, size = 10, maxit = 100, decay = .01)
-        hit.test$outcome <- as.factor(hit$outcome)
-        hit.x <- hit.test[,-hit.test$outcome]
-        hit.y <- hit.test[,hit.test$outcome]
-        result.hit <- nnet.sscv(hit.x,hit.y,hit.nn,size = 10)
-        table(hit$outcome)
-        
+        hit.miss <- misclass.nnet(hit.nn, hit.test$outcome)
+        hit.cv <- cnnet.cv(hit.nn, hit.test$outcome, hit.test, size = 10, maxit = 10000, decay = .01)
+        summary(hit.cv)
+        plot.nnet(hit.nn)
+  #Random Forest
+    
