@@ -378,4 +378,35 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         summary(hit.cv)
         plot.nnet(hit.nn)
   #Random Forest
-    
+      #Functions
+        crf.sscv = function(fit,y,data,B=25,p=.333,mtry=fit$mtry,ntree=fit$ntree) {
+          n = length(y)
+          cv <- rep(0,B)
+          for (i in 1:B) {
+            ss <- floor(n*p)
+            sam <- sample(1:n,ss)
+            temp <- data[-sam,]
+            fit2 <- randomForest(formula(fit),data=temp,mtry=mtry,ntree=ntree)
+            ynew <- predict(fit2,newdata=data[sam,],type="class")
+            tab <- table(y[sam],ynew)
+            mc <- ss - sum(diag(tab))
+            cv[i] <- mc/ss
+          }
+          cv
+        }
+        
+        #Pitchers
+          pit.test <- pitch[,-1]
+          pit.test <- select(pit.test, player = `Player Amt.`, team = `Team Amt.`, Midpoint, IP, ERA, SO, WHIP, FIP, WAR, outcome)
+          names(pit.test)
+          pit.rf <- randomForest(outcome~., data = pit.test, mtry = 2)
+          pit.cv <- crf.sscv(pit.rf, pit.test$outcome, pit.test)          
+          summary(pit.cv) 
+        #Postition Players
+          hit.test <- hit[,-1]
+          hit.test <- select(hit.test, player = `Player Amt.`, team = `Team Amt.`, Midpoint, WAR, AVG, OPSplus, RC, DRS, RBI, outcome)
+          names(hit.test)
+          hit.rf <- randomForest(outcome~., data = hit.test, mtry = 2)          
+          hit.rf.cv <- crf.sscv(hit.rf, hit.test$outcome, hit.test)          
+          summary(hit.rf.cv)          
+            
