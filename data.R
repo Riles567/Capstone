@@ -290,14 +290,14 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
   #combining arbwar data with pitching data
     pitch <- left_join(arbwarpit, pitchers, by = c("Player" = "Player", "Year.x" = "yearID"), copy = FALSE)
     pitch <- na.omit(pitch)
-    pitch <- select(pitch, Player, `Player Amt.`, `Team Amt.`, Midpoint, IP = IP.y, ERA, SO, WHIP, FIP, WAR = Total.WAR, outcome)
+    pitch <- select(pitch, Player, `Player Amt.`, `Team Amt.`, Midpoint, `Settled Amt.`, IP = IP.y, ERA, SO, WHIP, FIP, WAR = Total.WAR, outcome)
 
   #combining arbwar data with position players data
     hit <- left_join(hit, drs, by = c("playerName" = "ï..Name" , "yearID" = "year"), copy = FALSE)
     hit <- select(hit, playerName, yearID, G, AB, R, H, HR, RBI, SB, SO, AVG, OPSplus, RC, Pos, Inn, DRS)
     hit <- left_join(arbwarpos, hit, by = c("Player" = "playerName", "Year.x" = "yearID"))
     hit <- na.omit(hit)
-    hit <- select(hit, Player, `Player Amt.`, `Team Amt.`, Midpoint, WAR = Total.WAR, AVG, OPSplus, RC, DRS, RBI, outcome)
+    hit <- select(hit, Player, `Player Amt.`, `Team Amt.`, Midpoint, `Settled Amt.`, WAR = Total.WAR, AVG, OPSplus, RC, DRS, RBI, outcome)
 
 # Predictive model building
   
@@ -310,6 +310,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
       pitch.trans$`Player Amt.` <- pitch.trans$`Player Amt.`^(1/10)
       pitch.trans$`Team Amt.` <- pitch.trans$`Team Amt.`^(3/10)
       pitch.trans$Midpoint <- pitch.trans$Midpoint^(1/5)
+      pitch.trans$`Settled Amt.` <- pitch.trans$`Settled Amt.`^(1/5)
       pitch.trans$IP <- pitch.trans$IP^(1/10)
       pitch.trans$SO <- pitch.trans$SO^(1/5)
       pitch.trans$WHIP <- pitch.trans$WHIP^(3/10)
@@ -321,6 +322,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
       hit.trans$`Player Amt.` <- log(hit.trans$`Player Amt.`)
       hit.trans$`Team Amt.` <- hit.trans$`Team Amt.`^(-.1)
       hit.trans$Midpoint <- log(hit.trans$Midpoint)
+      hit.trans$`Settled Amt.` <- log(hit.trans$`Settled Amt.`)
       hit.trans$AVG <- hit.trans$AVG^(9/10)
       hit.trans$OPSplus <- hit.trans$OPSplus^(9/10)
       hit.trans$RC <- hit.trans$RC^(3/10)
@@ -358,19 +360,17 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
         }
         cv
       }
-      
+     
     #implentation
       #Pitchers
-        names(pitch.trans)
-        pitch.test <- pitch.trans[,-1]
-        names(pitch.test)
-        pitch.nn <- nnet(outcome ~., data = pitch.test, size = 10, maxit = 5000, decay = .001)
-        pitch.miss <- misclass.nnet(pitch.nn, pitch.test$outcome)
-        pitch.cv <- cnnet.cv(pitch.nn, pitch.test$outcome, pitch.test, size = 10, decay = .001, maxit = 10000)
+        pitch.out <- pitch.trans[,c(-1,-5)]
+        pitch.nn <- nnet(outcome ~., data = pitch.out, size = 10, maxit = 5000, decay = .001)
+        pitch.miss <- misclass.nnet(pitch.nn, pitch.out$outcome)
+        pitch.cv <- cnnet.cv(pitch.nn, pitch.out$outcome, pitch.out, size = 10, decay = .001, maxit = 10000)
         summary(pitch.cv)
         plot.nnet(pitch.nn)
+       
       #position players
-        names(hit)
         hit.test <- hit.trans[,-1]
         hit.nn <- nnet(outcome~., data = hit.test, size = 10, maxit = 100, decay = .01)
         hit.miss <- misclass.nnet(hit.nn, hit.test$outcome)
@@ -394,7 +394,7 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
           }
           cv
         }
-        
+      #implentation 
         #Pitchers
           pit.test <- pitch[,-1]
           pit.test <- select(pit.test, player = `Player Amt.`, team = `Team Amt.`, Midpoint, IP, ERA, SO, WHIP, FIP, WAR, outcome)
@@ -409,4 +409,4 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
           hit.rf <- randomForest(outcome~., data = hit.test, mtry = 2)          
           hit.rf.cv <- crf.sscv(hit.rf, hit.test$outcome, hit.test)          
           summary(hit.rf.cv)          
-            
+          
