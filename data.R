@@ -364,19 +364,20 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
     #implentation
       #Pitchers
         pitch.out <- pitch.trans[,c(-1,-5)]
-        pitch.nn <- nnet(outcome ~., data = pitch.out, size = 10, maxit = 5000, decay = .001)
+        pitch.nn <- nnet(outcome ~., data = pitch.out, size = 5, maxit = 5000, decay = .001)
         pitch.miss <- misclass.nnet(pitch.nn, pitch.out$outcome)
-        pitch.cv <- cnnet.cv(pitch.nn, pitch.out$outcome, pitch.out, size = 10, decay = .001, maxit = 10000)
+        pitch.cv <- cnnet.cv(pitch.nn, pitch.out$outcome, pitch.out, size = 5, decay = .001, maxit = 10000)
         summary(pitch.cv)
         plot.nnet(pitch.nn)
-       
+        boxplot(pitch.cv, main = "Neural Network")
       #position players
         hit.test <- hit.trans[,-1]
-        hit.nn <- nnet(outcome~., data = hit.test, size = 10, maxit = 100, decay = .01)
+        hit.nn <- nnet(outcome~., data = hit.test, size = 7, maxit = 100, decay = .01)
         hit.miss <- misclass.nnet(hit.nn, hit.test$outcome)
-        hit.cv <- cnnet.cv(hit.nn, hit.test$outcome, hit.test, size = 10, maxit = 10000, decay = .01)
+        hit.cv <- cnnet.cv(hit.nn, hit.test$outcome, hit.test, size = 7, maxit = 10000, decay = .01)
         summary(hit.cv)
         plot.nnet(hit.nn)
+        boxplot(hit.cv, main = "Neural Network")
   #Random Forest
       #Functions
         crf.sscv = function(fit,y,data,B=25,p=.333,mtry=fit$mtry,ntree=fit$ntree) {
@@ -394,19 +395,27 @@ setwd("C:/Users/arile/Desktop/Capstone/DATA") #desktop
           }
           cv
         }
+        rfimp.class = function(rffit,measure=1,horiz=T) {
+          barplot(sort(rffit$importance[,measure]),horiz=horiz,xlab="Importance Measure",main="Variable Importance")
+        }
+        
       #implentation 
         #Pitchers
           pit.test <- pitch[,-1]
           pit.test <- select(pit.test, player = `Player Amt.`, team = `Team Amt.`, Midpoint, IP, ERA, SO, WHIP, FIP, WAR, outcome)
           names(pit.test)
-          pit.rf <- randomForest(outcome~., data = pit.test, mtry = 2)
+          pit.rf <- randomForest(outcome~., data = pit.test, mtry = 3, maxnodes = 5)
           pit.cv <- crf.sscv(pit.rf, pit.test$outcome, pit.test)          
-          summary(pit.cv) 
+          summary(pit.cv)
+          rfimp.class(pit.rf, measure = 1, horiz = F)
+          boxplot(pit.cv, main = "Random Forest")
         #Postition Players
           hit.test <- hit[,-1]
           hit.test <- select(hit.test, player = `Player Amt.`, team = `Team Amt.`, Midpoint, WAR, AVG, OPSplus, RC, DRS, RBI, outcome)
           names(hit.test)
-          hit.rf <- randomForest(outcome~., data = hit.test, mtry = 2)          
+          hit.rf <- randomForest(outcome~., data = hit.test, mtry = 5, maxnodes = 5)          
           hit.rf.cv <- crf.sscv(hit.rf, hit.test$outcome, hit.test)          
-          summary(hit.rf.cv)          
+          summary(hit.rf.cv) 
+          rfimp.class(hit.rf, measure = 1, horiz = F)
+          boxplot(hit.rf.cv, main = "Random Forest")
           
